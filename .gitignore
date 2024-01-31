@@ -2,4 +2,6 @@
 .vscode
 .venv
 __pycache__
-
+poetry.lock
+DDPM/test.ipynb
+DDPM/data
