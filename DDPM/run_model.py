@@ -9,4 +9,4 @@ BETA = 0.0001
 
 model = torch.load(f"models/unet_{T_MAX}_{MODEL_DATE}.pth")
 model.eval()
-test_chain(model, BETA, T_MAX)
+test_chain(model, BETA, T_MAX, shape=(1, 3, 32, 32), n_samples=4)

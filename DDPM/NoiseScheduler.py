@@ -9,7 +9,7 @@ def normalize_img(img):
 
 def denormalize_img(img):
     denormalize = (img + 1) / 2
-    return np.clip(denormalize * 255, 0, 255)
+    return np.clip(denormalize * 255, 0, 255).numpy().astype(int)
 
 
 def betas_schedule(beta, t_max):
