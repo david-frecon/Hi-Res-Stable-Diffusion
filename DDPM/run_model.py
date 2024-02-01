@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 from utils import test_chain
 
-MODEL_DATE = "2024-02-01_19:40:51"
+MODEL_DATE = "2024-02-01_20:03:33"
 T_MAX = 400
 
 model = torch.load(f"models/unet_{T_MAX}_{MODEL_DATE}.pth")
