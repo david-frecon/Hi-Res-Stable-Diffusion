@@ -35,8 +35,9 @@ def test_chain(model, max_t, shape=(1, 1, 28, 28), n_samples=4):
 
     fig, ax = plt.subplots(n_samples, 5)
     for i in range(n_samples):
-        for t in range(5):
+        for t in range(4):
             ax[i, t].imshow(denormalize_img(big_chain[i][t].detach().cpu().numpy().squeeze()), cmap='gray')
+        ax[i, 4].imshow(denormalize_img(big_chain[i][-1].detach().cpu().numpy().squeeze()), cmap='gray')
 
     plt.show()
     return big_chain
