@@ -43,14 +43,15 @@ def test_chain(model, beta, max_t, shape=(1, 1, 28, 28), n_samples=4):
             if t > 0:
                 noise = torch.randn(shape)
                 noise = to_device(noise)
-                new_img = new_img + torch.sqrt(beta) * noise
+                new_img = new_img + torch.sqrt((1 - alphas_bar[t - 1]) / (1 - alphas_bar[t]) * betas[t]) * noise
+            new_img = torch.clip(new_img, -1, 1)
             chain.append(new_img)
         big_chain.append(chain)
 
     fig, ax = plt.subplots(n_samples, 5)
     for i in range(n_samples):
         for t in range(4):
-            ax[i, t].imshow(denormalize_img(big_chain[i][t].detach().cpu().numpy().squeeze()), cmap='gray')
+            ax[i, t].imshow(denormalize_img(big_chain[i][max_t * t // 4].detach().cpu().numpy().squeeze()), cmap='gray')
         ax[i, 4].imshow(denormalize_img(big_chain[i][-1].detach().cpu().numpy().squeeze()), cmap='gray')
 
     plt.show()
