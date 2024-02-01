@@ -28,3 +28,9 @@ def alphas_bar_schedule(alphas):
 def noise_sample(img, alpha_bar_t):
     noise = torch.randn_like(img)
     return torch.sqrt(alpha_bar_t) * img + torch.sqrt(1-alpha_bar_t) * noise
+
+
+def noise_batch(batch, alphas_bar_t, tensor_t):
+    noises = torch.randn_like(batch)
+    alphas_bar = alphas_bar_t[tensor_t].unsqueeze(1).unsqueeze(2).unsqueeze(3)
+    return torch.sqrt(alphas_bar) * batch + torch.sqrt(1 - alphas_bar) * noises, noises

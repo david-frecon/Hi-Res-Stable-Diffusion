@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchsummary import summary
 
+from utils import to_device
+
 
 class TimeEmbedding(nn.Module):
     def __init__(self, dim=32):
@@ -10,21 +12,22 @@ class TimeEmbedding(nn.Module):
         self.dim = dim
 
     def forward(self, t):
-        denominateur = torch.pow(10000, torch.arange(0, self.dim, 2).float() / self.dim)
-        sin = torch.sin(t / denominateur)
-        cos = torch.cos(t / denominateur)
-        emb = torch.zeros(self.dim)
-        emb[0::2] = sin
-        emb[1::2] = cos
+        denominator = torch.pow(10000, torch.arange(0, self.dim, 2).float() / self.dim).unsqueeze(0)
+        denominator = to_device(denominator)
+        t = t.unsqueeze(1)
+        sin = torch.sin(t / denominator)
+        cos = torch.cos(t / denominator)
+        emb = torch.stack((sin, cos), dim=2)
+        emb = emb.view(t.shape[0], -1)
         return emb
 
 
 class ResidualBlock(nn.Module):
-    def __init__(self, time_embedding, in_channels, out_channels):
+    def __init__(self, dim_time_embedding, in_channels, out_channels):
         super(ResidualBlock, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.resize_time_emb = nn.Linear(time_embedding, out_channels)
+        self.resize_time_emb = nn.Linear(dim_time_embedding, out_channels)
         self.upscale = in_channels > out_channels
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1)
@@ -38,11 +41,12 @@ class ResidualBlock(nn.Module):
             x = torch.cat((x, residual), dim=1)
         time_emb = F.relu(self.resize_time_emb(t))
         time_emb = time_emb[:, :, None, None]
-        x = x + time_emb
         x = self.conv1(x)
         x = F.relu(x)
+        x = x + time_emb
         x = self.conv2(x)
         x = F.relu(x)
+
         return x
 
 
@@ -53,6 +57,7 @@ class UNet(nn.Module):
         self.channels.insert(0, color_channels)
         self.reverse_channels = self.channels[::-1]
         self.depth = depth
+        self.time_emb = TimeEmbedding(time_emb_dim)
         self.down_conv = nn.ModuleList(
             [ResidualBlock(time_emb_dim, self.channels[i], self.channels[i + 1]) for i in range(len(self.channels) - 2)])
         self.middle_conv = nn.Sequential(
@@ -69,24 +74,12 @@ class UNet(nn.Module):
     def forward(self, x, t):
         residuals = []
         for i, block in enumerate(self.down_conv):
-            x = block(x, t)
+            x = block(x, self.time_emb(t))
             residuals.append(x)
             x = self.max_pool(x)
         x = self.middle_conv(x)
 
         for i, block in enumerate(self.up_conv):
-            x = block(x, t, residuals[-i - 1])
+            x = block(x, self.time_emb(t), residuals[-i - 1])
 
         return self.out_conv(x)
-
-
-if __name__ == '__main__':
-    model = UNet()
-    if torch.cuda.is_available():
-        device = torch.device('cuda')
-    elif torch.backends.mps.is_available():
-        device = torch.device('mps')
-    else:
-        device = torch.device('cpu')
-    model = model.to(device)
-    print(model)

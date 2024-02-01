@@ -1,11 +1,16 @@
+from functools import cache
+
 import torch
 
 
-def to_device(model):
+@cache
+def get_device():
     if torch.cuda.is_available():
-        device = torch.device('cuda')
-    elif torch.backends.mps.is_available():
-        device = torch.device('mps')
-    else:
-        device = torch.device('cpu')
-    return model.to(device)
+        return torch.device('cuda')
+    if torch.backends.mps.is_available():
+        return torch.device('mps')
+    return torch.device('cpu')
+
+
+def to_device(model):
+    return model.to(get_device())
