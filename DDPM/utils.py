@@ -51,8 +51,13 @@ def test_chain(model, beta, max_t, shape=(1, 1, 28, 28), n_samples=4):
 
     fig, ax = plt.subplots(n_samples, 5)
     for i in range(n_samples):
-        for t in range(4):
-            ax[i, t].imshow(denormalize_img(big_chain[i][max_t * t // 4].permute(0, 2, 3, 1).detach().cpu().squeeze()))
+        # for t in range(4):
+        #     ax[i, t].imshow(denormalize_img(big_chain[i][max_t * t // 4].permute(0, 2, 3, 1).detach().cpu().squeeze()))
+        ax[i, 4].imshow(denormalize_img(big_chain[i][-16].permute(0, 2, 3, 1).detach().cpu().squeeze()))
+        ax[i, 4].imshow(denormalize_img(big_chain[i][-8].permute(0, 2, 3, 1).detach().cpu().squeeze()))
+        ax[i, 4].imshow(denormalize_img(big_chain[i][-4].permute(0, 2, 3, 1).detach().cpu().squeeze()))
+        ax[i, 4].imshow(denormalize_img(big_chain[i][-2].permute(0, 2, 3, 1).detach().cpu().squeeze()))
+
         ax[i, 4].imshow(denormalize_img(big_chain[i][-1].permute(0, 2, 3, 1).detach().cpu().squeeze()))
 
     plt.show()
