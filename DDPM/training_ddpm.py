@@ -14,7 +14,7 @@ from rich.progress import Progress
 import time
 
 BATCH_SIZE = 2**5
-EPOCHS = 10
+EPOCHS = 300
 LR = 0.0001
 BETA = 0.0001
 T_MAX = 400
@@ -28,7 +28,7 @@ stable_diff_transform = transforms.Compose([
     transforms.Lambda(lambda x: x * 2 - 1)
 ])
 cifar_dataset = datasets.CIFAR10(root='./data', transform=stable_diff_transform, download=True)
-cifar_7 = [img for img, label in cifar_dataset if label == 7]
+cifar_7 = [img for img, label in cifar_dataset if label == 0]
 dataloader_cifar = DataLoader(cifar_7, batch_size=BATCH_SIZE, shuffle=True)
 unet = UNet(depth=4, time_emb_dim=32, color_channels=3)
 unet = to_device(unet)
@@ -49,6 +49,7 @@ with Progress(SpinnerColumn(), *Progress.get_default_columns(), "[yellow]{task.f
         for batch_idx, batch in enumerate(dataloader_cifar):
 
             progress.update(batch_task, advance=1)
+            progress.update(epoch_task, advance=1/len(dataloader_cifar))
 
             if len(batch) != BATCH_SIZE:
                 continue
@@ -81,7 +82,6 @@ with Progress(SpinnerColumn(), *Progress.get_default_columns(), "[yellow]{task.f
             torch.save(unet.state_dict(), f"models/tmp_best.pth")
 
         progress.update(batch_task, visible=False)
-        progress.update(epoch_task, advance=1)
 
 
 print("Total duration", time.time() - t_total)
