@@ -31,6 +31,8 @@ class ResidualBlock(nn.Module):
         self.upscale = in_channels > out_channels
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1)
+        self.gnorm1 = nn.GroupNorm(32, out_channels)
+        self.gnorm2 = nn.GroupNorm(32, out_channels)
         if self.upscale:
             self.up_conv = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2)
 
@@ -42,10 +44,10 @@ class ResidualBlock(nn.Module):
         time_emb = F.relu(self.resize_time_emb(t))
         time_emb = time_emb[:, :, None, None]
         x = self.conv1(x)
-        x = F.relu(x)
+        x = self.gnorm1(F.relu(x))
         x = x + time_emb
         x = self.conv2(x)
-        x = F.relu(x)
+        x = self.gnorm2(F.relu(x))
 
         return x
 
@@ -68,8 +70,10 @@ class UNet(nn.Module):
         )
         self.up_conv = nn.ModuleList([ResidualBlock(time_emb_dim, self.reverse_channels[i], self.reverse_channels[i + 1]) for i in
                                       range(len(self.reverse_channels) - 2)])
+        self.drop = nn.Dropout2d(p=0.05)
         self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
         self.out_conv = nn.Conv2d(self.channels[1], color_channels, kernel_size=1, stride=1, padding=0)
+
 
     def forward(self, x, t):
         residuals = []
@@ -77,9 +81,11 @@ class UNet(nn.Module):
             x = block(x, self.time_emb(t))
             residuals.append(x)
             x = self.max_pool(x)
+            x = self.drop(x)
         x = self.middle_conv(x)
 
         for i, block in enumerate(self.up_conv):
             x = block(x, self.time_emb(t), residuals[-i - 1])
+            x = self.drop(x)
 
         return self.out_conv(x)
