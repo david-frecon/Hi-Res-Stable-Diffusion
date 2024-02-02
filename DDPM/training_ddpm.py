@@ -7,9 +7,10 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from utils import to_device, test_chain
 from datetime import datetime
+import time
 
 BATCH_SIZE = 2**5
-EPOCHS = 500
+EPOCHS = 300
 LR = 0.00001
 BETA = 0.0001
 T_MAX = 400
@@ -36,6 +37,8 @@ unet = to_device(unet)
 
 optimizer = torch.optim.Adam(unet.parameters(), lr=LR)
 
+t_total = time.time()
+t = time.time()
 for epoch in range(EPOCHS):
     if (epoch+1) % 50 == 0:
         print(f"Epoch {epoch+1}")
@@ -57,6 +60,8 @@ for epoch in range(EPOCHS):
 
         if (epoch+1) % 50 == 0:
             if batch_idx % 100 == 0:
+                print("Duration", time.time() - t)
+                t = time.time()
                 print(f"Loss: {loss.item()}")
                 fig, ax = plt.subplots(1, 3)
                 ax[0].imshow(denormalize_img(batch[0].permute(1, 2, 0).detach().cpu().squeeze()))
@@ -64,6 +69,6 @@ for epoch in range(EPOCHS):
                 ax[2].imshow(denormalize_img(output[0].permute(1, 2, 0).detach().cpu().squeeze()))
                 plt.show()
 
-
+print("Total duration", time.time() - t_total)
 torch.save(unet, f"models/unet_{T_MAX}_{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}.pth")
-test_chain(unet, BETA, T_MAX)
+test_chain(unet, BETA, T_MAX, shape=(1, 3, 32, 32))
