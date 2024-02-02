@@ -36,7 +36,6 @@ class Encoder(nn.Module):
         # a numerically instable logarithm afterwards.
         log_var = self.fc_log_var(x)
 
-        # TODO: Do the reparametrization trick!
         z = mean + torch.randn_like(mean) * torch.exp(log_var)
 
         return z, mean, log_var
@@ -54,13 +53,15 @@ class Decoder(nn.Module):
         self.dec = nn.Sequential(
             nn.ConvTranspose2d(1024, 64, kernel_size=4, stride=1, padding=0),
             nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(64, 64, kernel_size=4, stride=4, padding=0),
+            nn.ConvTranspose2d(64, 64, kernel_size=4, stride=2, padding=0),
             nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(64, 32, kernel_size=4, stride=4, padding=0),
+            nn.ConvTranspose2d(64, 64, kernel_size=8, stride=2, padding=0),
             nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(32, 32, kernel_size=4, stride=4, padding=0),
+            nn.ConvTranspose2d(64, 32, kernel_size=8, stride=2, padding=0),
             nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(32, 3, kernel_size=2, stride=2, padding=0)
+            nn.ConvTranspose2d(32, 32, kernel_size=8, stride=3, padding=0),
+            nn.ReLU(inplace=True),
+            nn.ConvTranspose2d(32, 3, kernel_size=8, stride=3, padding=15)
         )
 
     def forward(self, x):

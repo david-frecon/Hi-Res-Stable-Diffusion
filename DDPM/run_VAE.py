@@ -1,5 +1,7 @@
 import torch
 import matplotlib.pyplot as plt
+
+from utils import to_device, get_device_name
 from VAE import VAE
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
@@ -10,8 +12,8 @@ dataset = datasets.ImageFolder(root='data/data_for_fashion_clip/out/', transform
     transforms.Lambda(lambda x: x * 2 - 1)
 ]))
 
-net = VAE().cuda()
-net.load_state_dict(torch.load("models/vae.pt"))
+net = to_device(VAE())
+net.load_state_dict(torch.load("models/vae_louis.pt", map_location=get_device_name()))
 
 indexes = [0, 1, 2, 3, 4]
 plt.figure(figsize=(10, 8))
@@ -20,7 +22,7 @@ for i, index in enumerate(indexes):
     print(x.max(), x.min())
 
     with torch.no_grad():
-        reconstruction, _, _ = net(x.unsqueeze(0).cuda())
+        reconstruction, _, _ = net(to_device(x.unsqueeze(0)))
     reconstruction = reconstruction.clip(-1, 1)
     reconstruction = (reconstruction + 1) / 2
     reconstruction = reconstruction * 255

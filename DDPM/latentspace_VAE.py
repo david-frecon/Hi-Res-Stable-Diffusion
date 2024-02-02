@@ -1,28 +1,28 @@
 import torch
 import matplotlib.pyplot as plt
+
+from utils import to_device, get_device_name
 from VAE import VAE
 import numpy as np
 
 
-net = VAE().cuda()
-net.load_state_dict(torch.load("models/vae.pt"))
+net = to_device(VAE())
+net.load_state_dict(torch.load("models/vae_louis.pt", map_location=get_device_name()))
 
 
 @torch.no_grad()
 def plot_latent_space(vae, n=30, figsize=15):
-    # display a n*n 2D manifold of digits
     digit_size = 512
     scale = 1.0
     figure = np.zeros((digit_size * n, digit_size * n, 3), dtype=np.uint8)
-    # linearly spaced coordinates corresponding to the 2D plot
-    # of digit classes in the latent space
+
     grid_x = np.linspace(-scale, scale, n)
     grid_y = np.linspace(-scale, scale, n)[::-1]
 
     for i, yi in enumerate(grid_y):
         for j, xi in enumerate(grid_x):
-            z_sample = torch.randn((1, 16**2)).cuda()
-            x_decoded = vae.dec(z_sample.cuda().float()).cpu()
+            z_sample = to_device(torch.randn((1, 16**2)))
+            x_decoded = vae.dec(z_sample.float()).cpu()
             x_decoded = (x_decoded + 1) / 2
             digit = x_decoded[0].reshape(3, digit_size, digit_size)
             digit = digit.permute(1, 2, 0).numpy()

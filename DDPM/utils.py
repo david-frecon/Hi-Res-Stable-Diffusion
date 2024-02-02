@@ -8,12 +8,17 @@ from NoiseScheduler import denormalize_img, alphas_schedule, betas_schedule, alp
 
 
 @cache
-def get_device():
+def get_device_name():
     if torch.cuda.is_available():
-        return torch.device('cuda')
+        return 'cuda'
     if torch.backends.mps.is_available():
-        return torch.device('mps')
-    return torch.device('cpu')
+        return 'mps'
+    return 'cpu'
+
+
+@cache
+def get_device():
+    return torch.device(get_device_name())
 
 
 def to_device(model):
