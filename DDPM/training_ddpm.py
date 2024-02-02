@@ -13,11 +13,11 @@ from rich.progress import SpinnerColumn
 from rich.progress import Progress
 import time
 
-BATCH_SIZE = 2**5
-EPOCHS = 300
+BATCH_SIZE = 2**6
+EPOCHS = 200
 LR = 0.0001
 BETA = 0.0001
-T_MAX = 400
+T_MAX = 1000
 BETAS = betas_schedule(BETA, T_MAX)
 ALPHAS = alphas_schedule(BETAS)
 ALPHAS_BAR = alphas_bar_schedule(ALPHAS)
@@ -53,6 +53,10 @@ with Progress(SpinnerColumn(), *Progress.get_default_columns(), "[yellow]{task.f
 
             if len(batch) != BATCH_SIZE:
                 continue
+
+            ## apply random horizontal flip
+            if torch.rand(1) > 0.5:
+                batch = torch.flip(batch, [3])
 
             tensor_t = torch.randint(0, T_MAX, (BATCH_SIZE,))
             tensor_t_float = to_device(tensor_t.float())
