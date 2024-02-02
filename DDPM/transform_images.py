@@ -4,7 +4,7 @@ import pandas as pd
 
 
 IN_PATH = "data/data_for_fashion_clip/in"
-OUT_PATH = "data/data_for_fashion_clip/out2"
+OUT_PATH = "data/data_for_fashion_clip/out"
 
 
 for path in os.listdir(IN_PATH):
