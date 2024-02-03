@@ -33,31 +33,39 @@ df['detail_desc'] = df['detail_desc'].astype(str)
 texts = df['detail_desc'].to_list()
 texts_embeddings = f_clip.encode_text(texts, batch_size=32)
 
-embeddings_dict = {}
-for i, text in enumerate(texts):
-    embeddings_dict[text] = texts_embeddings[i]
+
+vae = VAE()
+vae.load_state_dict(torch.load("models/vae_louis.pt", map_location=get_device_name()))
+vae = to_device(vae)
+vae.eval()
+vae.requires_grad_(False)
+
+
+# Create tensor of all images
+images_tensor = torch.zeros(len(df), 1, 16, 16)
+for i in range(len(df)):
+    img_name = os.path.join(img_dir, 'classes', str(df.iloc[i, 0]) + '.jpg')
+    image = Image.open(img_name)
+    image = to_device(transforms.ToTensor()(image)).view(1, 3, 512, 512)
+    image, _, _ = vae.enc(image)
+    images_tensor[i] = image.view(1, 1, 16, 16)
+
+# Create tensor of all descriptions
+descriptions_tensor = torch.zeros(len(df), 512)
+for i in range(len(df)):
+    descriptions_tensor[i] = torch.tensor(texts_embeddings[i])
+
+images_tensor = to_device(images_tensor)
+descriptions_tensor = to_device(descriptions_tensor)
 
 
 class CustomImageDataset(Dataset):
-    def __init__(self, csv_file, img_dir, transform=None):
-        self.csv_data = pd.read_csv(csv_file)
-        self.csv_data['detail_desc'] = self.csv_data['detail_desc'].astype(str)
-        self.img_dir = img_dir
-        self.transform = transform
-
     def __len__(self):
-        return len(self.csv_data)
+        return len(images_tensor)
 
     def __getitem__(self, idx):
-        img_name = os.path.join(self.img_dir, 'classes', str(self.csv_data.iloc[idx, 0]) + '.jpg')
-        image = Image.open(img_name)
-        description = self.csv_data.iloc[idx, 24]
-        description = embeddings_dict[description]
+        return images_tensor[idx], descriptions_tensor[idx]
 
-        if self.transform:
-            image = self.transform(image)
-
-        return image, description
 
 # Transformations pour les images
 transform = transforms.Compose([
@@ -66,19 +74,13 @@ transform = transforms.Compose([
 ])
 
 # Création du dataset personnalisé
-dataset = CustomImageDataset(csv_file=csv_file, img_dir=img_dir, transform=transform)
+dataset = CustomImageDataset()
 
 # DataLoader
 loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
 unet = UNetText(depth=4, time_emb_dim=32, text_emb_dim=512, color_channels=1)
 unet = to_device(unet)
-
-vae = VAE()
-vae.load_state_dict(torch.load("models/vae_louis.pt", map_location=get_device_name()))
-vae = to_device(vae)
-vae.eval()
-vae.requires_grad_(False)
 
 optimizer = torch.optim.Adam(unet.parameters(), lr=LR)
 
@@ -91,31 +93,19 @@ for epoch in range(EPOCHS):
         if len(batch_images) != BATCH_SIZE:
             continue
 
-        #batch_images = batch_images
         batch_descriptions = to_device(batch_descriptions)
+        latent_batch = batch_images
 
-        if torch.rand(1) > 0.5:
-            batch_images = torch.flip(batch_images, [3])
+        # if torch.rand(1) > 0.5:
+        #     batch_images = torch.flip(batch_images, [3])
 
         tensor_t = torch.randint(0, T_MAX, (BATCH_SIZE,))
         tensor_t_float = to_device(tensor_t.float())
-        # noised_batch, noises = noise_batch(batch_images, ALPHAS_BAR, tensor_t)
-        # noises = to_device(noises)
-        # noised_batch = to_device(noised_batch)
-        #
-        # latent_noised_batch, _, _ = vae.enc(noised_batch)
-        # latent_noised_batch = to_device(latent_noised_batch)
-        # latent_noises, _, _ = vae.enc(noises)
-        # latent_noises = to_device(latent_noises)
 
-        latent_batch, _, _ = vae.enc(to_device(batch_images))
-        latent_batch = latent_batch.view(BATCH_SIZE, 1, 16, 16)
         latent_noised_batch, latent_noises = noise_batch(latent_batch, ALPHAS_BAR, tensor_t)
 
         optimizer.zero_grad()
 
-        # latent_noised_batch = latent_noised_batch.view(BATCH_SIZE, 1, 16, 16)
-        # latent_noises = latent_noises.view(BATCH_SIZE, 1, 16, 16)
         output = unet(latent_noised_batch, tensor_t_float, batch_descriptions)
         loss = F.mse_loss(output, latent_noises)
         loss.backward()
