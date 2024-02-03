@@ -8,7 +8,7 @@ from torchvision import transforms
 import pandas as pd
 
 from NoiseScheduler import betas_schedule, alphas_schedule, alphas_bar_schedule, noise_batch
-from utils import to_device
+from utils import to_device, get_device_name
 from UNetText import UNetText
 from VAE import VAE
 
@@ -75,7 +75,7 @@ unet = UNetText(depth=4, time_emb_dim=32, text_emb_dim=512, color_channels=1)
 unet = to_device(unet)
 
 vae = VAE()
-vae.load_state_dict(torch.load("models/vae_louis.pt", map_location=torch.device('mps')))
+vae.load_state_dict(torch.load("models/vae_louis.pt", map_location=get_device_name()))
 vae = to_device(vae)
 vae.eval()
 vae.requires_grad_(False)
