@@ -82,6 +82,8 @@ vae.requires_grad_(False)
 
 optimizer = torch.optim.Adam(unet.parameters(), lr=LR)
 
+ALPHAS_BAR = to_device(ALPHAS_BAR)
+
 for epoch in range(EPOCHS):
 
     for batch_idx, (batch_images, batch_descriptions) in enumerate(loader):
@@ -97,19 +99,23 @@ for epoch in range(EPOCHS):
 
         tensor_t = torch.randint(0, T_MAX, (BATCH_SIZE,))
         tensor_t_float = to_device(tensor_t.float())
-        noised_batch, noises = noise_batch(batch_images, ALPHAS_BAR, tensor_t)
-        noises = to_device(noises)
-        noised_batch = to_device(noised_batch)
+        # noised_batch, noises = noise_batch(batch_images, ALPHAS_BAR, tensor_t)
+        # noises = to_device(noises)
+        # noised_batch = to_device(noised_batch)
+        #
+        # latent_noised_batch, _, _ = vae.enc(noised_batch)
+        # latent_noised_batch = to_device(latent_noised_batch)
+        # latent_noises, _, _ = vae.enc(noises)
+        # latent_noises = to_device(latent_noises)
 
-        latent_noised_batch, _, _ = vae.enc(noised_batch)
-        latent_noised_batch = to_device(latent_noised_batch)
-        latent_noises, _, _ = vae.enc(noises)
-        latent_noises = to_device(latent_noises)
+        latent_batch, _, _ = vae.enc(to_device(batch_images))
+        latent_batch = latent_batch.view(BATCH_SIZE, 1, 16, 16)
+        latent_noised_batch, latent_noises = noise_batch(latent_batch, ALPHAS_BAR, tensor_t)
 
         optimizer.zero_grad()
 
-        latent_noised_batch = latent_noised_batch.view(BATCH_SIZE, 1, 16, 16)
-        latent_noises = latent_noises.view(BATCH_SIZE, 1, 16, 16)
+        # latent_noised_batch = latent_noised_batch.view(BATCH_SIZE, 1, 16, 16)
+        # latent_noises = latent_noises.view(BATCH_SIZE, 1, 16, 16)
         output = unet(latent_noised_batch, tensor_t_float, batch_descriptions)
         loss = F.mse_loss(output, latent_noises)
         loss.backward()
