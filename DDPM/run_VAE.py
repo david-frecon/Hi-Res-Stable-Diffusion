@@ -13,7 +13,7 @@ dataset = datasets.ImageFolder(root='data/data_for_fashion_clip/out/', transform
 ]))
 
 net = to_device(VAE())
-net.load_state_dict(torch.load("models/vae_louis.pt", map_location=get_device_name()))
+net.load_state_dict(torch.load("models/vae_louis_2.pt", map_location=get_device_name()))
 
 indexes = [0, 1, 2, 3, 4]
 plt.figure(figsize=(10, 8))
