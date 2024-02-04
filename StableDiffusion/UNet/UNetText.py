@@ -5,23 +5,55 @@ import torch.nn.functional as F
 import StableDiffusion.UNet.UNet as un
 
 
+class CrossAttention(nn.Module):
+    def __init__(self, image_embedding_shape, content_embedding_shape, out_channels):
+        super(CrossAttention, self).__init__()
+        self.out_channels = out_channels
+        self.query = nn.Linear(image_embedding_shape, image_embedding_shape)
+        self.key = nn.Linear(content_embedding_shape, image_embedding_shape)
+        self.value = nn.Linear(content_embedding_shape, image_embedding_shape)
+        self.wo = nn.Linear(image_embedding_shape, image_embedding_shape)
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, img, text_embedding):
+        q = self.query(img)
+        k = self.key(text_embedding)
+        v = self.value(text_embedding)
+        attn = self.softmax(q @ k.T)
+        x = attn @ v
+        x = self.wo(x)
+        return x
+
+
 class ResidualBlock(un.ResidualBlock):
     def __init__(self, dim_time_embedding, dim_text_embedding, in_channels, out_channels):
         super(ResidualBlock, self).__init__(dim_time_embedding, in_channels, out_channels)
         self.resize_text_emb = nn.Linear(dim_text_embedding, out_channels)
+        self.cross_attn = CrossAttention(out_channels, out_channels, out_channels)
 
-    def forward(self, x, t, text_emb, residual=None):
+    def forward(self, x, t, text_emb, residual=None, cross_attn=False):
         if self.upscale:
             x = self.up_conv(x)
         if residual is not None:
             x = torch.cat((x, residual), dim=1)
         time_emb = F.relu(self.resize_time_emb(t))
-        time_emb = time_emb[:, :, None, None]
         text_emb = F.relu(self.resize_text_emb(text_emb))
-        text_emb = text_emb[:, :, None, None]
         x = self.conv1(x)
         x = self.gnorm1(F.relu(x))
-        x = x + time_emb + text_emb
+
+        if cross_attn:
+            # Cross attention
+            embeddings = text_emb + time_emb
+            b, c, h, w = x.shape
+            x = x.view(b, h * w, c)
+            attention = self.cross_attn(x, embeddings)
+            x = x + attention
+            x = x.view(b, c, h, w)
+        else:
+            time_emb = time_emb[:, :, None, None]
+            text_emb = text_emb[:, :, None, None]
+            x = x + time_emb + text_emb
+
         x = self.conv2(x)
         x = self.gnorm2(F.relu(x))
 
