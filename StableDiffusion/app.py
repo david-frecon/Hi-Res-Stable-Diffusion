@@ -18,14 +18,14 @@ BETA = 0.0001
 T_MAX = 1000
 
 STABLE_DIFFUSION_MODELS = {
-    "unet": "unet_text_color.pth",
-    "vae": "vae_louis.pt"
+    "unet": "ldm.pth",
+    "vae": "small_vae.pt"
 }
 DDPM_MODELS = {
-    "unet": "tmp_best_louis.pth"
+    "unet": "ddpm_horses.pth"
 }
 VAE_MODELS = {
-    "vae": "vae_louis.pt"
+    "vae": "small_vae.pt"
 }
 
 def create_app():
@@ -117,8 +117,6 @@ def create_app():
     description_label.pack()
     description_entry = tk.Entry(center_frame, width=50)
     description_entry.pack()
-    select_file_button = tk.Button(center_frame, text="Sélectionner une image",
-                                   command=lambda: filedialog.askopenfilename())
 
     generate_button = tk.Button(center_frame, text="Générer", command=generate)
     generate_button.pack(pady=10)

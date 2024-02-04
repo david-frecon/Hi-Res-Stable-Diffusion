@@ -86,8 +86,8 @@ def test_DDPM_chain(model, beta, max_t, shape=(1, 1, 28, 28), n_samples=4, save_
     if callback is None:
         fig, ax = plt.subplots(n_samples, 5)
         for i in range(n_samples):
-            for j, t in enumerate([-16, -8, -4, -2, -1]):
-                ax[i, j].imshow(denormalize_img(chain[t][i].permute(0, 2, 3, 1).detach().cpu().squeeze()))
+            for j, t in enumerate([-64, -32, -16, -8, -1]):
+                ax[i, j].imshow(denormalize_img(chain[t][i].permute(1, 2, 0).detach().cpu().squeeze()))
                 ax[i, j].axis("off")
 
         plt.show()
@@ -99,7 +99,7 @@ def test_DDPM_chain(model, beta, max_t, shape=(1, 1, 28, 28), n_samples=4, save_
         img = np.zeros((512, 512 * n_samples, 3), dtype=np.uint8)
         for t in range(max_t // 2, max_t):
             images = [chain[t][i] for i in range(n_samples)]
-            decoded_images = [denormalize_img(img.permute(0, 2, 3, 1).detach().cpu().squeeze()).astype(np.uint8) for img in images]
+            decoded_images = [denormalize_img(img.permute(1, 2, 0).detach().cpu().squeeze()).astype(np.uint8) for img in images]
             decoded_images = [cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in decoded_images]
             decoded_images = [cv2.resize(img, (512, 512), interpolation=cv2.INTER_NEAREST) for img in decoded_images]
 

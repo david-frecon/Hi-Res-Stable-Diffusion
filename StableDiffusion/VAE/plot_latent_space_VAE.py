@@ -7,7 +7,7 @@ from VAE import VAE
 from StableDiffusion.utils import to_device, get_device_name
 
 
-MODEL_NAME = "vae_louis.pt"
+MODEL_NAME = "small_vae.pt"
 
 
 net = to_device(VAE())

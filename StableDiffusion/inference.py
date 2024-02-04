@@ -7,8 +7,8 @@ from utils import to_device, get_device_name, test_stable_diffusion_chain
 from VAE.VAE import VAE
 from fashion_clip.fashion_clip import FashionCLIP
 
-UNET_MODEL_NAME = "unet_text_color.pth"
-VAE_MODEL_NAME = "vae_louis.pt"
+UNET_MODEL_NAME = "ldm.pth"
+VAE_MODEL_NAME = "small_vae.pt"
 VAE_LATENT_DIM = 16**2
 VAE_LATENT_WIDTH = int(math.sqrt(VAE_LATENT_DIM))
 
@@ -17,7 +17,6 @@ BETA = 0.0001
 T_MAX = 1000
 
 MY_TEXTS = ["a red dress", "blue T-Shirt", "pink tshirt", "a yellow jean", "black dress"]
-#MY_TEXTS = ["a red dress", "blue T-Shirt"]
 
 f_clip = FashionCLIP("fashion-clip")
 texts_embeddings = to_device(torch.tensor(f_clip.encode_text(MY_TEXTS, batch_size=32))).view(len(MY_TEXTS), 512)

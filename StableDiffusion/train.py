@@ -18,8 +18,8 @@ from utils import to_device, get_device_name, test_stable_diffusion_chain
 from UNet.UNetText import UNetText
 from VAE.VAE import VAE
 
-MODEL_NAME = "unet_text_color.pt"
-VAE_MODEL_NAME = "vae_louis.pt"
+MODEL_NAME = "ldm.pt"
+VAE_MODEL_NAME = "small_vae.pt"
 VAE_LATENT_DIM = 16**2
 IMG_DIR = '../data/data_for_fashion_clip/out/'
 CSV_FILE = '../data/data_for_fashion_clip/articles.csv'

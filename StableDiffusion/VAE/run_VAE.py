@@ -8,17 +8,17 @@ from StableDiffusion.utils import to_device, get_device_name
 from VAE import VAE
 
 
-MODEL_NAME = "vae_louis.pt"
+MODEL_NAME = "small_vae.pt"
 INDEXES_TO_PLOT = [0, 1, 2, 3, 4]
 
 
-dataset = datasets.ImageFolder(root='data/data_for_fashion_clip/out/', transform=transforms.Compose([
+dataset = datasets.ImageFolder(root='../data/data_for_fashion_clip/out/', transform=transforms.Compose([
     transforms.ToTensor(),
     transforms.Lambda(lambda x: x * 2 - 1)
 ]))
 
 net = to_device(VAE())
-net.load_state_dict(torch.load(f"models/{MODEL_NAME}", map_location=get_device_name()))
+net.load_state_dict(torch.load(f"../models/{MODEL_NAME}", map_location=get_device_name()))
 net.eval()
 net.requires_grad_(False)
 

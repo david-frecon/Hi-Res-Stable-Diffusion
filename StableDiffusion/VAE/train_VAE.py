@@ -12,7 +12,7 @@ BETA = 1.0
 LATENT_DIM = 16
 LR = 0.001
 
-dataset = datasets.ImageFolder(root='data/data_for_fashion_clip/out/', transform=transforms.Compose([
+dataset = datasets.ImageFolder(root='../data/data_for_fashion_clip/out/', transform=transforms.Compose([
     transforms.ToTensor(),
     transforms.Lambda(lambda x: x * 2 - 1)
 ]))
@@ -47,4 +47,4 @@ for epoch in range(EPOCHS):
 
     print(f"Epoch {epoch}; recon: {_recon}; kl: {_kl}")
 
-torch.save(net.state_dict(), f"models/{MODEL_NAME}")
+torch.save(net.state_dict(), f"../models/{MODEL_NAME}")
