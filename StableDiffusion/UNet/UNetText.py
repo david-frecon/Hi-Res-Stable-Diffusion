@@ -63,14 +63,15 @@ class ResidualBlock(un.ResidualBlock):
 
 
 class UNetText(un.UNet):
-    def __init__(self, depth=4, time_emb_dim=32, text_emb_dim=512, color_channels=1):
+    def __init__(self, depth=4, time_emb_dim=32, text_emb_dim=512, color_channels=1, add_cross=False):
         self.text_emb_dim = text_emb_dim
+        self.add_cross = add_cross
         super(UNetText, self).__init__(depth, time_emb_dim, color_channels)
 
     def init_blocks(self):
         self.down_conv = nn.ModuleList(
             [ResidualBlock(self.time_emb_dim, self.text_emb_dim, self.channels[i],
-                           self.channels[i + 1]) for i in range(len(self.channels) - 2)])
+                           self.channels[i + 1], add_cross=self.add_cross) for i in range(len(self.channels) - 2)])
 
         self.middle_conv = nn.Sequential(
             nn.Conv2d(self.channels[-2], self.channels[-1], kernel_size=3, stride=1, padding=1),
@@ -81,7 +82,7 @@ class UNetText(un.UNet):
 
         self.up_conv = nn.ModuleList([
             ResidualBlock(self.time_emb_dim, self.text_emb_dim, self.reverse_channels[i],
-                          self.reverse_channels[i + 1]) for i in range(len(self.reverse_channels) - 2)])
+                          self.reverse_channels[i + 1], add_cross=self.add_cross) for i in range(len(self.reverse_channels) - 2)])
 
     def forward(self, x, t, text_emb):
         residuals = []
