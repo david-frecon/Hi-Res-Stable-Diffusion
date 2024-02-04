@@ -100,9 +100,9 @@ def test_stable_diffusion_chain(unet, vae, beta, max_t, texts_embeddings, latent
         new_images = torch.clip(new_images, -1, 1)
         chain.append(new_images)
 
-    fig, ax = plt.subplots(n_samples, 5)
+    fig, ax = plt.subplots(n_samples, 6)
     for i in range(n_samples):
-        images = [chain[0][i], chain[500][i], chain[250][i], chain[100][i], chain[-1][i]]
+        images = [chain[0][i], chain[150][i], chain[500][i], chain[750][i], chain[900][i], chain[-1][i]]
         decoded_images = [vae.dec(img.view(1, latent_width**2)).cpu().detach().squeeze() for img in images]
         decoded_images = [denormalize_img(img.permute(1, 2, 0)) for img in decoded_images]
         for j, img in enumerate(decoded_images):

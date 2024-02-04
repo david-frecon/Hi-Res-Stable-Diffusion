@@ -133,4 +133,4 @@ with Progress(SpinnerColumn(), *Progress.get_default_columns(), "[yellow]{task.f
         progress.update(batch_task, visible=False)
 
 torch.save(unet.state_dict(), f"../models/{MODEL_NAME}")
-test_stable_diffusion_chain(unet, vae, BETA, T_MAX, test_texts_embeddings, latent_width=vae_latent_width)
+test_stable_diffusion_chain(unet, vae, BETA, T_MAX, to_device(torch.tensor(test_texts_embeddings)), latent_width=vae_latent_width)

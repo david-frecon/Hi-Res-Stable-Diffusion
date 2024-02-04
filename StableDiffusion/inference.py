@@ -11,15 +11,15 @@ UNET_MODEL_NAME = "unet_text_3.pth"
 VAE_MODEL_NAME = "vae_louis.pt"
 VAE_LATENT_DIM = 16**2
 
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 BETA = 0.0001
 T_MAX = 1000
 
-MY_TEXTS = ["a red dress", "blue T-Shirt", "pink tshirt", "a yellow jean", "black dress"]
-MY_TEXTS = [
-    "Two-strand hairband with braids in imitation suede and elastic at the back.",
-    "blue T-Shirt"
-]
+MY_TEXTS = ["Red dress", "Blue T-Shirt", "Purple T-Shirt", "Blue jean", "Black dress"]
+# MY_TEXTS = [
+#     "Two-strand hairband with braids in imitation suede and elastic at the back.",
+#     "blue T-Shirt"
+# ]
 
 f_clip = FashionCLIP("fashion-clip")
 texts_embeddings = to_device(torch.tensor(f_clip.encode_text(MY_TEXTS, batch_size=32)))
