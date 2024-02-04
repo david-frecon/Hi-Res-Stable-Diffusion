@@ -2,6 +2,7 @@ import math
 
 from torchvision import transforms, datasets
 from torch.utils.data import DataLoader
+import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from datetime import datetime
 from rich.progress import SpinnerColumn
@@ -53,7 +54,6 @@ with Progress(SpinnerColumn(), *Progress.get_default_columns(), "[yellow]{task.f
             if len(batch) != BATCH_SIZE:
                 continue
 
-            ## apply random horizontal flip
             if torch.rand(1) > 0.5:
                 batch = torch.flip(batch, [3])
 
@@ -87,6 +87,5 @@ with Progress(SpinnerColumn(), *Progress.get_default_columns(), "[yellow]{task.f
         progress.update(batch_task, visible=False)
 
 
-print("Total duration", time.time() - t_total)
 torch.save(unet.state_dict(), f"models/unet_{T_MAX}_{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}.pth")
 test_DDPM_chain(unet, BETA, T_MAX, shape=(1, 3, 32, 32))

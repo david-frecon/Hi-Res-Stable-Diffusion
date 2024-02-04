@@ -1,9 +1,9 @@
-import torch
-import matplotlib.pyplot as plt
+import math
 
-from NoiseScheduler.NoiseScheduler import betas_schedule, alphas_schedule, alphas_bar_schedule, denormalize_img
+import torch
+
 from UNet.UNetText import UNetText
-from utils import to_device, get_device_name, get_device
+from utils import to_device, get_device_name, test_stable_diffusion_chain
 from VAE.VAE import VAE
 from fashion_clip.fashion_clip import FashionCLIP
 
@@ -40,4 +40,4 @@ vae.requires_grad_(False)
 input_shape = (1, 3, 512, 512)
 latent_shape = (1, 1, VAE_LATENT_DIM, VAE_LATENT_DIM)
 
-
+test_stable_diffusion_chain(unet, vae, BETA, T_MAX, texts_embeddings, int(math.sqrt(VAE_LATENT_DIM)))

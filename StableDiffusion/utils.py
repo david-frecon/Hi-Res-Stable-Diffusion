@@ -64,9 +64,9 @@ def test_DDPM_chain(model, beta, max_t, shape=(1, 1, 28, 28), n_samples=4):
     return big_chain
 
 
-def test_stable_diffusion_chain(unet, vae, beta, max_t, texts, texts_embeddings, latent_width=16, n_samples=4):
+def test_stable_diffusion_chain(unet, vae, beta, max_t, texts_embeddings, latent_width=16):
     big_chain = []
-    n_samples = len(texts)
+    n_samples = len(texts_embeddings)
 
     latent_shape = (1, 1, latent_width, latent_width)
 

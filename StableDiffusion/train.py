@@ -1,3 +1,4 @@
+import math
 import os
 
 import torch
@@ -7,10 +8,13 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 import pandas as pd
 
+from rich.progress import SpinnerColumn
+from rich.progress import Progress
+
 from fashion_clip.fashion_clip import FashionCLIP
 
 from NoiseScheduler.NoiseScheduler import betas_schedule, alphas_schedule, alphas_bar_schedule, noise_batch
-from utils import to_device, get_device_name
+from utils import to_device, get_device_name, test_stable_diffusion_chain
 from UNet.UNetText import UNetText
 from VAE.VAE import VAE
 
@@ -34,6 +38,8 @@ df = pd.read_csv(CSV_FILE)
 df['detail_desc'] = df['detail_desc'].astype(str)
 texts = df['detail_desc'].to_list()
 texts_embeddings = f_clip.encode_text(texts, batch_size=32)
+test_texts = ["blue T-Shirt", "Jean", "Yellow Jacket"]
+test_texts_embeddings = f_clip.encode_text(test_texts, batch_size=32)
 
 
 vae = VAE(latent_dim=VAE_LATENT_DIM)
@@ -75,30 +81,48 @@ loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 unet = UNetText(depth=4, time_emb_dim=32, text_emb_dim=512, color_channels=1)
 unet = to_device(unet)
 
-
 optimizer = torch.optim.Adam(unet.parameters(), lr=LR)
-for epoch in range(EPOCHS):
-    for batch_idx, (batch_images, batch_descriptions) in enumerate(loader):
-        if len(batch_images) != BATCH_SIZE:
-            continue
 
-        batch_descriptions = to_device(batch_descriptions)
-        latent_batch = batch_images
+with Progress(SpinnerColumn(), *Progress.get_default_columns(), "[yellow]{task.fields[loss]}") as progress:
 
-        tensor_t = torch.randint(0, T_MAX, (BATCH_SIZE,))
-        tensor_t_float = to_device(tensor_t.float())
+    epoch_task = progress.add_task("[red]Training...", total=EPOCHS, loss="")
+    best_loss = math.inf
 
-        latent_noised_batch, latent_noises = noise_batch(latent_batch, ALPHAS_BAR, tensor_t)
+    for epoch in range(EPOCHS):
 
-        optimizer.zero_grad()
+        batch_task = progress.add_task(f"Epoch {epoch}", total=len(loader), loss="")
 
-        output = unet(latent_noised_batch, tensor_t_float, batch_descriptions)
-        loss = F.mse_loss(output, latent_noises)
-        loss.backward()
-        optimizer.step()
+        for batch_idx, (batch_images, batch_descriptions) in enumerate(loader):
 
-        if batch_idx % 10 == 0:
-            print(f"Epoch {epoch}, batch {batch_idx}, loss {loss.item()}")
+            progress.update(batch_task, advance=1)
+            progress.update(epoch_task, advance=1 / len(loader))
 
-    print(f"Epoch {epoch}, loss {loss.item()}")
+            if len(batch_images) != BATCH_SIZE:
+                continue
+
+            batch_descriptions = to_device(batch_descriptions)
+            latent_batch = batch_images
+
+            tensor_t = torch.randint(0, T_MAX, (BATCH_SIZE,))
+            tensor_t_float = to_device(tensor_t.float())
+
+            latent_noised_batch, latent_noises = noise_batch(latent_batch, ALPHAS_BAR, tensor_t)
+
+            optimizer.zero_grad()
+
+            output = unet(latent_noised_batch, tensor_t_float, batch_descriptions)
+            loss = F.mse_loss(output, latent_noises)
+            loss.backward()
+            optimizer.step()
+
+            if batch_idx % 10 == 0:
+                progress.update(batch_task, loss=f"Loss: {loss.item():.4f}")
+
+        if loss.item() < best_loss:
+            best_loss = loss.item()
+            torch.save(unet.state_dict(), f"models/tmp_best.pth")
+
+        progress.update(batch_task, visible=False)
+
 torch.save(unet.state_dict(), f"models/unet_text_{T_MAX}.pt")
+test_stable_diffusion_chain(unet, vae, BETA, T_MAX, test_texts_embeddings, latent_width=int(math.sqrt(VAE_LATENT_DIM)))
