@@ -1,5 +1,6 @@
 from functools import cache
 
+import numpy as np
 from rich.progress import SpinnerColumn
 from rich.progress import Progress
 
@@ -67,7 +68,7 @@ def test_DDPM_chain(model, beta, max_t, shape=(1, 1, 28, 28), n_samples=4):
     return big_chain
 
 
-def test_stable_diffusion_chain(unet, vae, beta, max_t, texts_embeddings, latent_width=16):
+def test_stable_diffusion_chain(unet, vae, beta, max_t, texts_embeddings, latent_width=16, save_video=False):
     big_chain = []
     n_samples = len(texts_embeddings)
 
@@ -82,11 +83,9 @@ def test_stable_diffusion_chain(unet, vae, beta, max_t, texts_embeddings, latent
 
     with Progress(SpinnerColumn(), *Progress.get_default_columns()) as progress:
 
-        sample_task = progress.add_task("[red]Sampling...", total=n_samples)
+        sample_task = progress.add_task("[red]Sampling...", total=n_samples * max_t)
 
         for i in range(n_samples):
-
-            progress.update(sample_task, advance=1)
 
             latent_noised = torch.randn(latent_shape)
             latent_noised = to_device(latent_noised)
@@ -99,6 +98,7 @@ def test_stable_diffusion_chain(unet, vae, beta, max_t, texts_embeddings, latent
 
             for t in range(max_t - 1, -1, -1):
                 progress.update(time_task, advance=1)
+                progress.update(sample_task, advance=1)
 
                 time_tensor = torch.tensor([t]).to(get_device()).float()
                 predicted_noise = unet(chain[-1], time_tensor, text_tensor)
@@ -125,3 +125,20 @@ def test_stable_diffusion_chain(unet, vae, beta, max_t, texts_embeddings, latent
                 ax[i, j].axis("off")
 
     plt.show()
+
+    if save_video:
+        import cv2
+        fourcc = cv2.VideoWriter_fourcc(*'avc1')
+        out = cv2.VideoWriter('output.mp4', fourcc, 30.0, (512 * n_samples, 512))
+        img = np.zeros((512, 512 * n_samples, 3), dtype=np.uint8)
+        for t in range(max_t // 2, max_t):
+            images = [big_chain[i][t] for i in range(n_samples)]
+            decoded_images = [vae.dec(img.view(1, 16 * 16)).cpu().detach().squeeze() for img in images]
+            decoded_images = [denormalize_img(img.permute(1, 2, 0)).astype(np.uint8) for img in decoded_images]
+            decoded_images = [cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in decoded_images]
+
+            for j, decoded_img in enumerate(decoded_images):
+                img[:, 512 * j:512 * (j + 1), :] = decoded_img
+
+            out.write(img)
+        out.release()
