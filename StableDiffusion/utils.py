@@ -68,10 +68,9 @@ def test_DDPM_chain(model, beta, max_t, shape=(1, 1, 28, 28), n_samples=4):
 
 
 def test_stable_diffusion_chain(unet, vae, beta, max_t, texts_embeddings, latent_width=16):
-    big_chain = []
     n_samples = len(texts_embeddings)
 
-    latent_shape = (1, 1, latent_width, latent_width)
+    latent_shape = (n_samples, 1, latent_width, latent_width)
 
     betas = betas_schedule(beta, max_t)
     alphas = alphas_schedule(betas)
@@ -82,42 +81,33 @@ def test_stable_diffusion_chain(unet, vae, beta, max_t, texts_embeddings, latent
 
     with Progress(SpinnerColumn(), *Progress.get_default_columns()) as progress:
 
-        sample_task = progress.add_task("[red]Sampling...", total=n_samples)
+        latent_noised = torch.randn(latent_shape)
+        latent_noised = to_device(latent_noised)
 
-        for i in range(n_samples):
+        chain = [latent_noised]
 
-            progress.update(sample_task, advance=1)
+        time_task = progress.add_task("[red]Sampling...", total=max_t)
 
-            latent_noised = torch.randn(latent_shape)
-            latent_noised = to_device(latent_noised)
+        for t in range(max_t - 1, -1, -1):
+            progress.update(time_task, advance=1)
 
-            chain = [latent_noised]
+            time_tensor = torch.tensor([t for _ in range(n_samples)]).to(get_device()).float()
+            predicted_noise = unet(chain[-1], time_tensor, texts_embeddings)
+            new_img = inverse_sqrt_alphas[t] * (chain[-1] - inverse_sqrt_alphas_bar[t] * predicted_noise)
 
-            text_tensor = texts_embeddings[i].view(1, 512)
+            if t > 0:
+                latent_noise = torch.randn(latent_shape)
+                latent_noise = to_device(latent_noise)
+                new_img = new_img + torch.sqrt(betas[t]) * latent_noise
 
-            time_task = progress.add_task(f"Sample {i+1}/{n_samples}", total=max_t)
+            new_img = torch.clip(new_img, -1, 1)
+            chain.append(new_img)
 
-            for t in range(max_t - 1, -1, -1):
-                progress.update(time_task, advance=1)
-
-                time_tensor = torch.tensor([t]).to(get_device()).float()
-                predicted_noise = unet(chain[-1], time_tensor, text_tensor)
-                new_img = inverse_sqrt_alphas[t] * (chain[-1] - inverse_sqrt_alphas_bar[t] * predicted_noise)
-
-                if t > 0:
-                    latent_noise = torch.randn(latent_shape)
-                    latent_noise = to_device(latent_noise)
-                    new_img = new_img + torch.sqrt(betas[t]) * latent_noise
-
-                new_img = torch.clip(new_img, -1, 1)
-                chain.append(new_img)
-
-            progress.update(time_task, visible=False)
-            big_chain.append(chain)
+        progress.update(time_task, visible=False)
 
         fig, ax = plt.subplots(n_samples, 5)
         for i in range(n_samples):
-            images = [big_chain[i][0], big_chain[i][-500], big_chain[i][-250], big_chain[i][-100], big_chain[i][-1]]
+            images = [chain[0][i], chain[-500][i], chain[-250][i], chain[-100][i], chain[-1][i]]
             decoded_images = [vae.dec(img.view(1, 16 * 16)).cpu().detach().squeeze() for img in images]
             decoded_images = [denormalize_img(img.permute(1, 2, 0)) for img in decoded_images]
             for j, img in enumerate(decoded_images):
