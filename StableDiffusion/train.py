@@ -18,10 +18,11 @@ from utils import to_device, get_device_name, test_stable_diffusion_chain
 from UNet.UNetText import UNetText
 from VAE.VAE import VAE
 
+MODEL_NAME = "unet_text_color.pt"
 VAE_MODEL_NAME = "vae_louis.pt"
 VAE_LATENT_DIM = 16**2
-IMG_DIR = 'data/data_for_fashion_clip/out/'
-CSV_FILE = 'data/data_for_fashion_clip/articles.csv'
+IMG_DIR = '../data/data_for_fashion_clip/out/'
+CSV_FILE = '../data/data_for_fashion_clip/articles.csv'
 
 BATCH_SIZE = 128
 EPOCHS = 100
@@ -33,29 +34,36 @@ BETAS = betas_schedule(BETA, T_MAX)
 ALPHAS = alphas_schedule(BETAS)
 ALPHAS_BAR = to_device(alphas_bar_schedule(ALPHAS))
 
+vae_latent_width = int(math.sqrt(VAE_LATENT_DIM))
+
 f_clip = FashionCLIP("fashion-clip")
 df = pd.read_csv(CSV_FILE)
+
 df['detail_desc'] = df['detail_desc'].astype(str)
+df['colour_group_name'] = df['colour_group_name'].astype(str)
 texts = df['detail_desc'].to_list()
-texts_embeddings = f_clip.encode_text(texts, batch_size=32)
+colors = df['colour_group_name'].to_list()
+full_texts = [f"{color} {text}" for text, color in zip(texts, colors)]
+
+texts_embeddings = f_clip.encode_text(full_texts, batch_size=32)
 test_texts = ["blue T-Shirt", "Jean", "Yellow Jacket"]
 test_texts_embeddings = f_clip.encode_text(test_texts, batch_size=32)
 
 
 vae = VAE(latent_dim=VAE_LATENT_DIM)
-vae.load_state_dict(torch.load(f"models/{VAE_MODEL_NAME}", map_location=get_device_name()))
+vae.load_state_dict(torch.load(f"../models/{VAE_MODEL_NAME}", map_location=get_device_name()))
 vae = to_device(vae)
 vae.eval()
 vae.requires_grad_(False)
 
 
-images_tensor = torch.zeros(len(df), 1, VAE_LATENT_DIM, VAE_LATENT_DIM)
+images_tensor = torch.zeros(len(df), 1, vae_latent_width, vae_latent_width)
 for i in range(len(df)):
     img_name = os.path.join(IMG_DIR, 'classes', str(df.iloc[i, 0]) + '.jpg')
     image = Image.open(img_name)
     image = to_device(transforms.ToTensor()(image)).view(1, 3, 512, 512)
     image, _, _ = vae.enc(image)
-    images_tensor[i] = image.view(1, 1, VAE_LATENT_DIM, VAE_LATENT_DIM)
+    images_tensor[i] = image.view(1, 1, vae_latent_width, vae_latent_width)
 
 
 descriptions_tensor = torch.zeros(len(df), 512)
@@ -120,9 +128,9 @@ with Progress(SpinnerColumn(), *Progress.get_default_columns(), "[yellow]{task.f
 
         if loss.item() < best_loss:
             best_loss = loss.item()
-            torch.save(unet.state_dict(), f"models/tmp_best.pth")
+            torch.save(unet.state_dict(), f"../models/tmp_best.pth")
 
         progress.update(batch_task, visible=False)
 
-torch.save(unet.state_dict(), f"models/unet_text_{T_MAX}.pt")
-test_stable_diffusion_chain(unet, vae, BETA, T_MAX, test_texts_embeddings, latent_width=int(math.sqrt(VAE_LATENT_DIM)))
+torch.save(unet.state_dict(), f"../models/{MODEL_NAME}")
+test_stable_diffusion_chain(unet, vae, BETA, T_MAX, test_texts_embeddings, latent_width=vae_latent_width)
