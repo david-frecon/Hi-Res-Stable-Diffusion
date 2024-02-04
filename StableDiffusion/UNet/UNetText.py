@@ -26,12 +26,14 @@ class CrossAttention(nn.Module):
 
 
 class ResidualBlock(un.ResidualBlock):
-    def __init__(self, dim_time_embedding, dim_text_embedding, in_channels, out_channels):
+    def __init__(self, dim_time_embedding, dim_text_embedding, in_channels, out_channels, add_cross=False):
         super(ResidualBlock, self).__init__(dim_time_embedding, in_channels, out_channels)
         self.resize_text_emb = nn.Linear(dim_text_embedding, out_channels)
-        self.cross_attn = CrossAttention(out_channels, out_channels, out_channels)
+        self.add_cross = add_cross
+        if add_cross:
+            self.cross_attn = CrossAttention(out_channels, out_channels, out_channels)
 
-    def forward(self, x, t, text_emb, residual=None, cross_attn=False):
+    def forward(self, x, t, text_emb, residual=None):
         if self.upscale:
             x = self.up_conv(x)
         if residual is not None:
@@ -41,7 +43,7 @@ class ResidualBlock(un.ResidualBlock):
         x = self.conv1(x)
         x = self.gnorm1(F.relu(x))
 
-        if cross_attn:
+        if self.add_cross:
             # Cross attention
             embeddings = text_emb + time_emb
             b, c, h, w = x.shape
