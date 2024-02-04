@@ -5,3 +5,4 @@ __pycache__
 poetry.lock
 DDPM/test.ipynb
 DDPM/data
+.DS_Store
