@@ -1,6 +1,11 @@
 import tkinter as tk
 from tkinter import ttk
-from tkinter import filedialog
+import os
+import sys
+
+# module_path = os.path.abspath(os.getcwd())
+# if module_path not in sys.path:
+#     sys.path.append(module_path)
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
