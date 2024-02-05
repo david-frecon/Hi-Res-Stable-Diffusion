@@ -20,6 +20,10 @@ Voici un exemple de génération d'images de vêtements à partir de texte avec 
 Textes utilisés : "a red dress", "blue T-Shirt", "pink tshirt", "a yellow jean", "black dress".
 
 
+
+https://github.com/david-frecon/Hi-Res-Stable-Diffusion/assets/55755544/8e2a52a8-93de-4f9c-8b2c-0f868765bb55
+
+
 On peut voir que le modèle est capable de générer des images de vêtement non présentes dans le dataset (comme le jean jaune), ce qui montre que le modèle a réussi à interpoler les différents concepts de vêtements au sein de l'espace latent pour générer des images cohérentes. 
 
 ## Installation
