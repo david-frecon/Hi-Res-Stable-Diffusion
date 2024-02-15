@@ -12,7 +12,8 @@ Auteurs:
 
 Le but de ce projet est d'implémenter le papier [High-Resolution Image Synthesis with Latent Diffusion Models](https://arxiv.org/pdf/2112.10752.pdf).
 Pour arriver à ce résultat, nous avons dans un premier temps implémenté un modèle de diffusion classique, puis nous avons implémenté et encapsulé ce modèle dans un espace latent pour obtenir un modèle de diffusion latente.
-De plus, nous avons ajouté des vecteurs décrivant une description textuelle de l'image pour faire de la génération d'image à partir de texte. L'encodeur du texte est celui de [FashionCLIP](https://github.com/patrickjohncyh/fashion-clip).
+De plus, nous avons ajouté des vecteurs décrivant une description textuelle de l'image pour faire de la génération d'image à partir de texte. L'encodeur du texte est celui de [FashionCLIP](https://github.com/patrickjohncyh/fashion-clip).  
+Le projet est retrouvable via une application HuggingFace Spaces: [https://huggingface.co/spaces/dfrecon/FashionStableDiffusion](https://huggingface.co/spaces/dfrecon/FashionStableDiffusion).
 
 ## Résultats
 
