@@ -8,13 +8,15 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-torch = "^2.2.0"
-torchvision = "^0.17.0"
+torch = "^2.5.1"
+torchvision = "^0.20.1"
 matplotlib = "^3.8.2"
 torchsummary = "^1.5.1"
 rich = "^13.7.0"
 fashion-clip = "^0.2.2"
 jupyter = "^1.0.0"
+numpy = "^1.26.4"
+transformers = "4.42.4"
 
 
 [build-system]

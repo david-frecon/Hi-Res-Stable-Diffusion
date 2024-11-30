@@ -3,9 +3,9 @@ from tkinter import ttk
 import os
 import sys
 
-# module_path = os.path.abspath(os.getcwd())
-# if module_path not in sys.path:
-#     sys.path.append(module_path)
+module_path = os.path.abspath(os.getcwd())
+if module_path not in sys.path:
+    sys.path.append(module_path)
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -63,13 +63,13 @@ def create_app():
             texts_embeddings = to_device(torch.tensor(f_clip.encode_text([description] * number_of_images, batch_size=32))).view(number_of_images, 512)
 
             unet = UNetText(depth=4, time_emb_dim=32, text_emb_dim=512, color_channels=1)
-            unet.load_state_dict(torch.load(f"../models/{STABLE_DIFFUSION_MODELS['unet']}", map_location=get_device_name()))
+            unet.load_state_dict(torch.load(f"../models/{STABLE_DIFFUSION_MODELS['unet']}", map_location=get_device_name(), weights_only=True))
             unet = to_device(unet)
             unet.eval()
             unet.requires_grad_(False)
 
             vae = VAE(16**2)
-            vae.load_state_dict(torch.load(f"../models/{STABLE_DIFFUSION_MODELS['vae']}", map_location=get_device_name()))
+            vae.load_state_dict(torch.load(f"../models/{STABLE_DIFFUSION_MODELS['vae']}", map_location=get_device_name(), weights_only=True))
             vae = to_device(vae)
             vae.eval()
             vae.requires_grad_(False)
@@ -78,7 +78,7 @@ def create_app():
 
         elif model == "DDPM":
             unet = UNet(depth=4, time_emb_dim=32, color_channels=3)
-            unet.load_state_dict(torch.load(f"../models/{DDPM_MODELS['unet']}", map_location=get_device_name()))
+            unet.load_state_dict(torch.load(f"../models/{DDPM_MODELS['unet']}", map_location=get_device_name(), weights_only=True))
             unet = to_device(unet)
             unet.eval()
             unet.requires_grad_(False)
